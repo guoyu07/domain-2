@@ -1,0 +1,151 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>Insert title here</title>
+<style type="text/css">
+#current span{display:inline-block;margin-left:5px;}
+</style>
+</head>
+<body>
+<script type="text/javascript">
+//每次请求的数量
+var ajaxCount = 30; 
+</script>
+<div ><a href="javascript:;" id="getDomain">开始</a> <a href="javascript:;" id="stopGetDomain"></a></div>
+<div id="count"></div>
+<div id="current">
+   <span>当前正在查询的域名：</span>
+   <script type="text/javascript">for(var i=0;i<ajaxCount;i++)document.write('<span id="current_'+i+'"></span>')</script>
+</div>
+<div id="can_use" style="color:red;width:900px;">可以注册的域名：</div>
+<div><div style="color:green;"><h3>已经被注册的域名：</h3></div>
+<div id="can_not_use" style="color:green;width:100%;"></div>
+</div>
+<div id="error" style="color:#00f;">错误的信息</div>
+<div id="error_domain">错误的域名：</div>
+<script type="text/javascript" src="http://127.0.0.1/jq.js"> </script>
+<script type="text/javascript">
+var queeStr = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','0','1','2','3','4','5','6','7','8','9'];
+//gk3
+//var queeStr = ['0','1','2','3','4','5','6','7','8','9'];
+var c = "apqe";
+$(function(){
+	var count = 0;
+	var can_use_count = 0;
+	function get_index(char)
+	{
+		for(var k in queeStr)
+		{
+			if(queeStr[k]==char)
+			{
+				return parseInt(k);
+			}
+		}
+	}
+
+	//倒数第k位加1
+	function change_domain(k)
+	{
+		if(k==undefined) 
+		{
+			var k = 1; //倒数最一位
+		}
+		var do_arr = c.split("");
+		var change_index = do_arr.length-k;
+		if(k>do_arr.length)
+		{
+			c += queeStr[0];
+			do_arr = c.split("");
+		}
+		//alert(do_arr[change_index]+","+queeStr[queeStr.length-1]);
+		if(do_arr[change_index] != queeStr[queeStr.length-1])
+		{
+			var index = get_index(do_arr[change_index]);
+			do_arr[change_index] = queeStr[index+1];
+			c = do_arr.join("");
+		}else
+		{
+			do_arr[change_index] = queeStr[0];
+			c = do_arr.join("");
+			change_domain(k+1);
+		}
+	}
+	/*function change_test()
+	{
+		for(var k=0;k<100;k++)
+		{
+			change_domain();
+			$("<span>"+c+"&nbsp;</span>").appendTo("body");
+		}
+		$("<br/>").appendTo("body");
+		if(m<20)
+		{
+			setTimeout(function(){
+				//change_test();
+				},1000)
+		}
+		m++;
+	}
+	var m =0;
+	change_test();*/
+	function getDomain(ajaxNum,re_check)
+	{
+		if(allowAjax == 0 && re_check==undefined)
+		{
+			$("#current_"+ajaxNum).html("");
+            return;
+		}
+		// 检查前的数据，检查后的数据;
+		var current_domain;
+		if(re_check==undefined )
+		{
+			change_domain();
+			current_domain = c;
+		}else
+		{
+			current_domain = re_check;
+		}
+		$("#current_"+ajaxNum).html(current_domain);
+		$.ajax({
+			   type: "GET",
+			   url: "domain.php",
+			   data: {d:current_domain},
+			   dataType:"json",
+			   success: function(data){
+				 $("#count").html(++count);
+				 //alert(data.done);
+				 if(data && data.done)
+				 {
+					$("#can_use").html($("#can_use").html()+current_domain+","+((can_use_count++)%40==0?"<br/>":""));
+				 }else
+					 $("#can_not_use").html($("#can_not_use").html()+current_domain+",");
+				if(count%40==0) $("<div />").appendTo("#can_not_use");
+				if(count%1000==0) $("#can_not_use").html("");
+				 getDomain(ajaxNum);
+				},
+			   error:function(data)
+			   {
+				   if($("#error_domain span").length>100) $("#error_domain span").remove();
+				   $("<span>"+current_domain+"&nbsp;</span>").appendTo("#error_domain");
+				   setTimeout(function(){
+						   getDomain(ajaxNum,current_domain);
+						},1000)
+				   
+			   }
+			});
+	}
+	$("#stopGetDomain").click(function(){
+		this.innerHTML = "<font color='red'>已经暂停</font>";
+		allowAjax = 0;
+	});
+   $("#getDomain").click(function(){
+	   allowAjax = 1;
+	   $("#stopGetDomain").html("暂停");
+	   for(var i =0;i<ajaxCount;i++)
+	      getDomain(i);
+   });
+});
+</script>
+</body>
+</html>
